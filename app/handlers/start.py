@@ -14,6 +14,36 @@ from app.payments import PaymentManager
 LOGGER = logging.getLogger(__name__)
 
 
+COMPANY_INFO_TEXT = (
+    "🏢 О компанії\n\n"
+    "Tarot Academy\n\n"
+    "Онлайн-платформа для навчання роботі з картами Таро.\n\n"
+    "Продавець: ФОП Гавриш Борис Григорійович\n\n"
+    "РНОКПП: 3824704579\n\n"
+    "Вид діяльності: продажа онлайн-курса по навчанню роботі з картами Таро.\n\n"
+    "Контактний email:\n"
+    "smirnovacarolina170@gmail.com"
+)
+
+
+def _course_offer_text(payment_manager: PaymentManager) -> str:
+    amount = int(payment_manager.liqpay.config.amount)
+    currency = payment_manager.liqpay.config.currency
+    return (
+        "🔮 База Таро за 9 днів\n\n"
+        "Опис:\n\n"
+        "Онлайн-курс для навчання основам роботи з картами Таро.\n\n"
+        "В курс входить:\n\n"
+        "• 9 навчальних уроків\n"
+        "• навчання роботі з картами Таро\n"
+        "• розуміння значень і трактовок карт\n"
+        "• правильний підхід до роботи з Таро\n"
+        "• домашні завдання для закріплення матеріала\n\n"
+        f"💰 Вартість: {amount} {currency}\n\n"
+        "🕐 Доступ к курсу: 1 год"
+    )
+
+
 def get_start_router(
     lesson_manager: LessonManager,
     sheets: GoogleSheetsClient,
@@ -29,8 +59,7 @@ def get_start_router(
             if not existing_user:
                 payment = await payment_manager.create_payment_for_user(message.from_user)
                 await message.answer(
-                    "Щоб отримати доступ до курсу, оплатіть участь. "
-                    "Після підтвердження оплати бот автоматично надішле перший урок.",
+                    _course_offer_text(payment_manager),
                     reply_markup=payment_keyboard(payment.checkout.payment_page_url),
                 )
                 return
@@ -55,9 +84,14 @@ def get_start_router(
             "Після підтвердження платежу бот автоматично відкриє перший урок.\n"
             "3. У розділі «📚 Мій курс» можна подивитися поточний стан курсу.\n"
             "4. У розділі «📊 Мій прогрес» показано, скільки уроків уже пройдено.\n\n"
+            "Інформація про продавця доступна в розділі «🏢 Про компанію».\n"
             "Якщо виникли питання з оплатою, доступом або роботою кнопок, зверніться до підтримки.",
             reply_markup=main_menu_keyboard(),
         )
+
+    @router.message(F.text == "🏢 Про компанію")
+    async def company_info_handler(message: Message) -> None:
+        await message.answer(COMPANY_INFO_TEXT, reply_markup=main_menu_keyboard())
 
     @router.message(F.text == "💬 Підтримка")
     async def support_handler(message: Message) -> None:

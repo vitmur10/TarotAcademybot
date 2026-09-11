@@ -10,6 +10,7 @@ def main_menu_keyboard() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="📚 Мій курс")],
             [KeyboardButton(text="📊 Мій прогрес")],
             [KeyboardButton(text="ℹ️ Допомога")],
+            [KeyboardButton(text="🏢 Про компанію")],
             [KeyboardButton(text="💬 Підтримка")],
         ],
         resize_keyboard=True,
