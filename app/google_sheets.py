@@ -85,6 +85,36 @@ def _to_float(value: Any, default: float = 0.0) -> float:
         return default
 
 
+def _parse_delay_hours(value: Any, default: float = 24.0) -> float:
+    raw_value = str(value).strip().lower().replace(",", ".")
+    if not raw_value:
+        return default
+
+    units = {
+        "s": 1 / 3600,
+        "sec": 1 / 3600,
+        "second": 1 / 3600,
+        "seconds": 1 / 3600,
+        "m": 1 / 60,
+        "min": 1 / 60,
+        "minute": 1 / 60,
+        "minutes": 1 / 60,
+        "h": 1,
+        "hr": 1,
+        "hour": 1,
+        "hours": 1,
+        "d": 24,
+        "day": 24,
+        "days": 24,
+    }
+
+    for suffix, multiplier in sorted(units.items(), key=lambda item: len(item[0]), reverse=True):
+        if raw_value.endswith(suffix):
+            return max(_to_float(raw_value[: -len(suffix)], default) * multiplier, 0)
+
+    return max(_to_float(raw_value, default), 0)
+
+
 class GoogleSheetsClient:
     def __init__(self, spreadsheet_id: str, credentials_file: str, timezone: ZoneInfo) -> None:
         self.spreadsheet_id = spreadsheet_id
@@ -166,7 +196,7 @@ class GoogleSheetsClient:
                     "text": str(record.get("text", "")).strip(),
                     "video_file_id": str(record.get("video_file_id", "")).strip(),
                     "document_file_id": str(record.get("document_file_id", "")).strip(),
-                    "delay_hours": _to_float(record.get("delay_hours"), 24) or 24,
+                    "delay_hours": _parse_delay_hours(record.get("delay_hours")),
                     "active": _to_bool(record.get("active")),
                 }
             )
