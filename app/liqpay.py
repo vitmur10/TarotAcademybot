@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import logging
 from dataclasses import dataclass
 from html import escape
 from typing import Any
@@ -10,6 +11,7 @@ from typing import Any
 from app.config import LiqPayConfig
 
 LIQPAY_CHECKOUT_URL = "https://www.liqpay.ua/api/3/checkout"
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -40,6 +42,17 @@ class LiqPayClient:
         }
         if self.config.sandbox:
             payload["sandbox"] = 1
+        LOGGER.info(
+            "Creating LiqPay checkout: order_id=%s public_key=%s sandbox=%s amount=%s currency=%s server_url=%s result_url=%s payment_page_url=%s",
+            order_id,
+            self.config.public_key,
+            self.config.sandbox,
+            self.config.amount,
+            self.config.currency,
+            payload["server_url"],
+            payload["result_url"],
+            f"{self.config.public_base_url}/pay/{order_id}",
+        )
         data = self._encode_payload(payload)
         return LiqPayCheckout(
             order_id=order_id,
