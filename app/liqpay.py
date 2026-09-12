@@ -63,7 +63,7 @@ class LiqPayClient:
 
     def sign(self, data: str) -> str:
         sign_string = f"{self.config.private_key}{data}{self.config.private_key}"
-        digest = hashlib.sha1(sign_string.encode("utf-8")).digest()
+        digest = hashlib.sha3_256(sign_string.encode("utf-8")).digest()
         return base64.b64encode(digest).decode("ascii")
 
     def verify_signature(self, data: str, signature: str) -> bool:
