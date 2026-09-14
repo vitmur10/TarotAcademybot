@@ -10,6 +10,7 @@ from app.config import ManualPaymentConfig
 from app.google_sheets import GoogleSheetsClient, now_in_timezone
 from app.keyboards import (
     main_menu_keyboard,
+    manual_payment_copy_keyboard,
     manual_payment_details_keyboard,
     manual_payment_review_keyboard,
     payment_keyboard,
@@ -31,6 +32,34 @@ COMPANY_INFO_TEXT = (
     "Контактний email:\n"
     "smirnovacarolina170@gmail.com"
 )
+
+
+def _extract_detail_value(details: str, label: str) -> str:
+    label_prefix = f"{label.lower()}:"
+    for line in details.splitlines():
+        line = line.strip()
+        if line.lower().startswith(label_prefix):
+            return line.split(":", 1)[1].strip()
+    return ""
+
+
+def _manual_payment_copy_items(manual_payment: ManualPaymentConfig) -> dict[str, str]:
+    copy_items = {
+        "IBAN": _extract_detail_value(manual_payment.details, "IBAN"),
+        "РНОКПП": _extract_detail_value(manual_payment.details, "РНОКПП"),
+        "отримувача": _extract_detail_value(manual_payment.details, "Отримувач"),
+    }
+    if manual_payment.purpose:
+        copy_items["призначення"] = manual_payment.purpose
+    copy_items["всі реквізити"] = _format_manual_payment_details_for_copy(manual_payment)
+    return copy_items
+
+
+def _format_manual_payment_details_for_copy(manual_payment: ManualPaymentConfig) -> str:
+    parts = [manual_payment.details]
+    if manual_payment.purpose:
+        parts.append(f"Призначення платежу: {manual_payment.purpose}")
+    return "\n".join(parts)
 
 
 def _format_manual_payment_details(manual_payment: ManualPaymentConfig) -> str:
@@ -172,7 +201,10 @@ def get_start_router(
             await callback.answer("Ручна оплата вимкнена.", show_alert=True)
             return
 
-        await callback.message.answer(_format_manual_payment_details(manual_payment))
+        await callback.message.answer(
+            _format_manual_payment_details(manual_payment),
+            reply_markup=manual_payment_copy_keyboard(_manual_payment_copy_items(manual_payment)),
+        )
         await callback.answer()
 
     @router.callback_query(F.data.startswith("manual_payment:review:"))
