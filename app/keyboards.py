@@ -26,8 +26,16 @@ def payment_keyboard(payment_url: str) -> InlineKeyboardMarkup:
 def manual_payment_review_keyboard(telegram_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="Підтвердити", callback_data=f"manual_payment:approve:{telegram_id}"),
-        InlineKeyboardButton(text="Відхилити", callback_data=f"manual_payment:reject:{telegram_id}"),
+        InlineKeyboardButton(
+            text="✅ Підтвердити",
+            callback_data=f"manual_payment:approve:{telegram_id}",
+            style="success",
+        ),
+        InlineKeyboardButton(
+            text="❌ Відхилити",
+            callback_data=f"manual_payment:reject:{telegram_id}",
+            style="danger",
+        ),
     )
     return builder.as_markup()
 
