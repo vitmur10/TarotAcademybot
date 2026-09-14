@@ -8,7 +8,13 @@ from aiogram.types import CallbackQuery, Message
 
 from app.config import ManualPaymentConfig
 from app.google_sheets import GoogleSheetsClient, now_in_timezone
-from app.keyboards import main_menu_keyboard, manual_payment_review_keyboard, payment_keyboard, support_keyboard
+from app.keyboards import (
+    main_menu_keyboard,
+    manual_payment_details_keyboard,
+    manual_payment_review_keyboard,
+    payment_keyboard,
+    support_keyboard,
+)
 from app.lessons import LessonManager
 from app.payments import PaymentManager
 
@@ -45,7 +51,7 @@ def _course_offer_text(payment_manager: PaymentManager) -> str:
     )
 
 
-def _manual_course_offer_text(manual_payment: ManualPaymentConfig) -> str:
+def _manual_course_offer_text() -> str:
     return (
         "🔮 База Таро за 9 днів\n\n"
         "Опис:\n\n"
@@ -56,10 +62,8 @@ def _manual_course_offer_text(manual_payment: ManualPaymentConfig) -> str:
         "• розуміння значень і трактовок карт\n"
         "• правильний підхід до роботи з Таро\n"
         "• домашні завдання для закріплення матеріала\n\n"
-        "Реквізити для оплати:\n"
-        f"{manual_payment.details}\n\n"
-        "Після оплати надішліть сюди скріншот квитанції. "
-        "Адміністратор перевірить оплату і відкриє доступ до курсу."
+        "💰 Вартість: 5000 UAH\n\n"
+        "🕐 Доступ к курсу: 1 год"
     )
 
 
@@ -74,7 +78,15 @@ def get_start_router(
 
     @router.message(CommandStart())
     async def start_handler(message: Message) -> None:
-        if payment_manager:
+        if manual_payment and manual_payment.enabled:
+            existing_user = await sheets.find_user(message.from_user.id)
+            if not existing_user:
+                await message.answer(
+                    _manual_course_offer_text(),
+                    reply_markup=manual_payment_details_keyboard(),
+                )
+                return
+        elif payment_manager:
             existing_user = await sheets.find_user(message.from_user.id)
             if not existing_user:
                 payment = await payment_manager.create_payment_for_user(message.from_user)
@@ -82,11 +94,6 @@ def get_start_router(
                     _course_offer_text(payment_manager),
                     reply_markup=payment_keyboard(payment.checkout.payment_page_url),
                 )
-                return
-        elif manual_payment and manual_payment.enabled:
-            existing_user = await sheets.find_user(message.from_user.id)
-            if not existing_user:
-                await message.answer(_manual_course_offer_text(manual_payment))
                 return
 
         result = await lesson_manager.register_and_send_first_lesson(message.bot, message.from_user)
@@ -143,7 +150,21 @@ def get_start_router(
         )
         await message.answer("Скріншот отримано. Очікуйте перевірки адміністратором.")
 
-    @router.callback_query(F.data.startswith("manual_payment:"))
+    @router.callback_query(F.data == "manual_payment:details")
+    async def manual_payment_details_handler(callback: CallbackQuery) -> None:
+        if not manual_payment or not manual_payment.enabled:
+            await callback.answer("Ручна оплата вимкнена.", show_alert=True)
+            return
+
+        await callback.message.answer(
+            "Реквізити для оплати:\n"
+            f"{manual_payment.details}\n\n"
+            "Після оплати надішліть сюди скріншот квитанції. "
+            "Адміністратор перевірить оплату і відкриє доступ до курсу."
+        )
+        await callback.answer()
+
+    @router.callback_query(F.data.startswith("manual_payment:review:"))
     async def manual_payment_review_handler(callback: CallbackQuery) -> None:
         if not manual_payment or not manual_payment.enabled:
             await callback.answer("Ручна перевірка вимкнена.", show_alert=True)
@@ -153,12 +174,12 @@ def get_start_router(
             return
 
         parts = callback.data.split(":")
-        if len(parts) != 3:
+        if len(parts) != 4:
             await callback.answer("Некоректна дія.", show_alert=True)
             return
 
-        action = parts[1]
-        telegram_id = int(parts[2])
+        action = parts[2]
+        telegram_id = int(parts[3])
         if action == "reject":
             await callback.bot.send_message(
                 telegram_id,

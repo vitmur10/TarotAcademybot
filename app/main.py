@@ -37,7 +37,7 @@ async def main() -> None:
     payment_runner = None
     payment_manager = None
 
-    if config.liqpay.enabled:
+    if config.liqpay.enabled and not config.manual_payment.enabled:
         liqpay = LiqPayClient(config.liqpay)
         payment_manager = PaymentManager(sheets=sheets, liqpay=liqpay, lesson_manager=lesson_manager)
         payment_app = create_payment_app(bot=bot, payment_manager=payment_manager)
