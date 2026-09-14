@@ -33,6 +33,22 @@ COMPANY_INFO_TEXT = (
 )
 
 
+def _format_manual_payment_details(manual_payment: ManualPaymentConfig) -> str:
+    purpose_text = (
+        "\n\nПризначення платежу:\n"
+        f"{manual_payment.purpose}"
+        if manual_payment.purpose
+        else ""
+    )
+    return (
+        "Реквізити для оплати:\n"
+        f"{manual_payment.details}"
+        f"{purpose_text}\n\n"
+        "Після оплати надішліть сюди скріншот квитанції. "
+        "Адміністратор перевірить оплату і відкриє доступ до курсу."
+    )
+
+
 def _course_offer_text(payment_manager: PaymentManager) -> str:
     amount = int(payment_manager.liqpay.config.amount)
     currency = payment_manager.liqpay.config.currency
@@ -156,12 +172,7 @@ def get_start_router(
             await callback.answer("Ручна оплата вимкнена.", show_alert=True)
             return
 
-        await callback.message.answer(
-            "Реквізити для оплати:\n"
-            f"{manual_payment.details}\n\n"
-            "Після оплати надішліть сюди скріншот квитанції. "
-            "Адміністратор перевірить оплату і відкриє доступ до курсу."
-        )
+        await callback.message.answer(_format_manual_payment_details(manual_payment))
         await callback.answer()
 
     @router.callback_query(F.data.startswith("manual_payment:review:"))

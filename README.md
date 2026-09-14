@@ -26,6 +26,7 @@
 - `MANUAL_PAYMENT_ENABLED` — `true`, якщо доступ відкривається вручну після скріншота оплати
 - `MANUAL_PAYMENT_REVIEW_CHAT_ID` — ID групи, куди бот надсилає скріншоти оплат для перевірки
 - `MANUAL_PAYMENT_DETAILS` — реквізити/інструкція для ручної оплати, яку бот покаже користувачу
+- `MANUAL_PAYMENT_PURPOSE` — призначення платежу, яке бот покаже разом із реквізитами
 - `GOOGLE_SPREADSHEET_ID`
 - `GOOGLE_CREDENTIALS_FILE`
 - `TIMEZONE`
@@ -120,6 +121,7 @@ PUBLIC_BASE_URL/liqpay/callback
 MANUAL_PAYMENT_ENABLED=true
 MANUAL_PAYMENT_REVIEW_CHAT_ID=-1001234567890
 MANUAL_PAYMENT_DETAILS=Карта: 0000 0000 0000 0000\nОтримувач: ...
+MANUAL_PAYMENT_PURPOSE=Оплата онлайн-курсу База Таро за 9 днів
 LIQPAY_ENABLED=false
 ```
 

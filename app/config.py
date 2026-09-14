@@ -31,6 +31,7 @@ class ManualPaymentConfig:
     enabled: bool
     review_chat_id: int | None
     details: str
+    purpose: str
 
 
 @dataclass(slots=True)
@@ -79,6 +80,7 @@ def load_config() -> Config:
     manual_payment_enabled = _parse_bool(os.getenv("MANUAL_PAYMENT_ENABLED", "false"))
     manual_payment_review_chat_id = _parse_optional_int(os.getenv("MANUAL_PAYMENT_REVIEW_CHAT_ID", ""))
     manual_payment_details = os.getenv("MANUAL_PAYMENT_DETAILS", "").strip().replace("\\n", "\n")
+    manual_payment_purpose = os.getenv("MANUAL_PAYMENT_PURPOSE", "").strip().replace("\\n", "\n")
     liqpay_enabled = _parse_bool(os.getenv("LIQPAY_ENABLED", "false"))
     liqpay_sandbox = _parse_bool(os.getenv("LIQPAY_SANDBOX", "false"))
     liqpay_public_key = os.getenv("LIQPAY_PUBLIC_KEY", "").strip()
@@ -141,5 +143,6 @@ def load_config() -> Config:
             enabled=manual_payment_enabled,
             review_chat_id=manual_payment_review_chat_id,
             details=manual_payment_details,
+            purpose=manual_payment_purpose,
         ),
     )
