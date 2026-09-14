@@ -42,6 +42,13 @@ def get_admin_router(sheets: GoogleSheetsClient, admin_ids: set[int]) -> Router:
             return
         await message.answer("Надішліть відео сюди, і я відповім його file_id.")
 
+    @router.message(Command("chat_id"))
+    async def chat_id_command(message: Message) -> None:
+        if not is_admin(message.from_user.id):
+            await message.answer("Команда доступна тільки адміністратору.")
+            return
+        await message.answer(f"chat_id: {message.chat.id}")
+
     @router.message(F.video)
     async def video_file_id_received(message: Message) -> None:
         if not is_admin(message.from_user.id):

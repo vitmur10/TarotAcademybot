@@ -27,6 +27,13 @@ class LiqPayConfig:
 
 
 @dataclass(slots=True)
+class ManualPaymentConfig:
+    enabled: bool
+    review_chat_id: int | None
+    details: str
+
+
+@dataclass(slots=True)
 class Config:
     bot_token: str
     admin_ids: set[int]
@@ -36,6 +43,7 @@ class Config:
     timezone: ZoneInfo
     lesson_check_interval: int
     liqpay: LiqPayConfig
+    manual_payment: ManualPaymentConfig
 
 
 def _parse_admin_ids(raw_value: str) -> set[int]:
@@ -51,6 +59,13 @@ def _parse_bool(raw_value: str) -> bool:
     return raw_value.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
+def _parse_optional_int(raw_value: str) -> int | None:
+    raw_value = raw_value.strip()
+    if not raw_value:
+        return None
+    return int(raw_value)
+
+
 def load_config() -> Config:
     load_dotenv()
 
@@ -61,6 +76,9 @@ def load_config() -> Config:
     lesson_check_interval = int(os.getenv("LESSON_CHECK_INTERVAL", "60"))
     admin_ids = _parse_admin_ids(os.getenv("ADMIN_IDS", ""))
     support_username = os.getenv("SUPPORT_USERNAME", "").strip().lstrip("@")
+    manual_payment_enabled = _parse_bool(os.getenv("MANUAL_PAYMENT_ENABLED", "false"))
+    manual_payment_review_chat_id = _parse_optional_int(os.getenv("MANUAL_PAYMENT_REVIEW_CHAT_ID", ""))
+    manual_payment_details = os.getenv("MANUAL_PAYMENT_DETAILS", "").strip().replace("\\n", "\n")
     liqpay_enabled = _parse_bool(os.getenv("LIQPAY_ENABLED", "false"))
     liqpay_sandbox = _parse_bool(os.getenv("LIQPAY_SANDBOX", "false"))
     liqpay_public_key = os.getenv("LIQPAY_PUBLIC_KEY", "").strip()
@@ -77,6 +95,11 @@ def load_config() -> Config:
         raise ValueError("BOT_TOKEN is required")
     if not spreadsheet_id:
         raise ValueError("GOOGLE_SPREADSHEET_ID is required")
+    if manual_payment_enabled:
+        if manual_payment_review_chat_id is None:
+            raise ValueError("MANUAL_PAYMENT_REVIEW_CHAT_ID is required when MANUAL_PAYMENT_ENABLED=true")
+        if not manual_payment_details:
+            raise ValueError("MANUAL_PAYMENT_DETAILS is required when MANUAL_PAYMENT_ENABLED=true")
     if liqpay_enabled:
         if not liqpay_public_key:
             raise ValueError("LIQPAY_PUBLIC_KEY is required when LIQPAY_ENABLED=true")
@@ -113,5 +136,10 @@ def load_config() -> Config:
             result_url=liqpay_result_url,
             web_host=liqpay_web_host,
             web_port=liqpay_web_port,
+        ),
+        manual_payment=ManualPaymentConfig(
+            enabled=manual_payment_enabled,
+            review_chat_id=manual_payment_review_chat_id,
+            details=manual_payment_details,
         ),
     )

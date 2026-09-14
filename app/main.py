@@ -47,7 +47,15 @@ async def main() -> None:
             port=config.liqpay.web_port,
         )
 
-    dp.include_router(get_start_router(lesson_manager, sheets, payment_manager, config.support_username))
+    dp.include_router(
+        get_start_router(
+            lesson_manager,
+            sheets,
+            payment_manager,
+            config.support_username,
+            config.manual_payment,
+        )
+    )
     dp.include_router(get_course_router(sheets, lesson_manager))
     dp.include_router(get_admin_router(sheets, config.admin_ids))
 
