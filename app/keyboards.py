@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aiogram.types import CopyTextButton, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
@@ -50,20 +50,6 @@ def manual_payment_review_keyboard(telegram_id: int) -> InlineKeyboardMarkup:
         ),
     )
     return builder.as_markup()
-
-
-def manual_payment_copy_keyboard(copy_items: dict[str, str]) -> InlineKeyboardMarkup | None:
-    builder = InlineKeyboardBuilder()
-    for label, value in copy_items.items():
-        if value:
-            builder.row(
-                InlineKeyboardButton(
-                    text=f"Скопіювати {label}",
-                    copy_text=CopyTextButton(text=value),
-                )
-            )
-    markup = builder.as_markup()
-    return markup if markup.inline_keyboard else None
 
 
 def support_keyboard(support_username: str) -> InlineKeyboardMarkup | None:

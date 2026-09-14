@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from html import escape
 
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
@@ -10,7 +11,6 @@ from app.config import ManualPaymentConfig
 from app.google_sheets import GoogleSheetsClient, now_in_timezone
 from app.keyboards import (
     main_menu_keyboard,
-    manual_payment_copy_keyboard,
     manual_payment_details_keyboard,
     manual_payment_review_keyboard,
     payment_keyboard,
@@ -34,48 +34,33 @@ COMPANY_INFO_TEXT = (
 )
 
 
-def _extract_detail_value(details: str, label: str) -> str:
-    label_prefix = f"{label.lower()}:"
-    for line in details.splitlines():
-        line = line.strip()
-        if line.lower().startswith(label_prefix):
-            return line.split(":", 1)[1].strip()
-    return ""
-
-
-def _manual_payment_copy_items(manual_payment: ManualPaymentConfig) -> dict[str, str]:
-    copy_items = {
-        "IBAN": _extract_detail_value(manual_payment.details, "IBAN"),
-        "РНОКПП": _extract_detail_value(manual_payment.details, "РНОКПП"),
-        "отримувача": _extract_detail_value(manual_payment.details, "Отримувач"),
-    }
-    if manual_payment.purpose:
-        copy_items["призначення"] = manual_payment.purpose
-    copy_items["всі реквізити"] = _format_manual_payment_details_for_copy(manual_payment)
-    return copy_items
-
-
-def _format_manual_payment_details_for_copy(manual_payment: ManualPaymentConfig) -> str:
-    parts = [manual_payment.details]
-    if manual_payment.purpose:
-        parts.append(f"Призначення платежу: {manual_payment.purpose}")
-    return "\n".join(parts)
-
-
 def _format_manual_payment_details(manual_payment: ManualPaymentConfig) -> str:
     purpose_text = (
         "\n\nПризначення платежу:\n"
-        f"{manual_payment.purpose}"
+        f"<code>{escape(manual_payment.purpose)}</code>"
         if manual_payment.purpose
         else ""
     )
+    details = "\n".join(
+        _format_manual_payment_detail_line(line)
+        for line in manual_payment.details.splitlines()
+        if line.strip()
+    )
     return (
         "Реквізити для оплати:\n"
-        f"{manual_payment.details}"
+        f"{details}"
         f"{purpose_text}\n\n"
         "Після оплати надішліть сюди скріншот квитанції. "
         "Адміністратор перевірить оплату і відкриє доступ до курсу."
     )
+
+
+def _format_manual_payment_detail_line(line: str) -> str:
+    if ":" not in line:
+        return f"<code>{escape(line.strip())}</code>"
+
+    label, value = line.split(":", 1)
+    return f"{escape(label.strip())}: <code>{escape(value.strip())}</code>"
 
 
 def _course_offer_text(payment_manager: PaymentManager) -> str:
@@ -203,7 +188,7 @@ def get_start_router(
 
         await callback.message.answer(
             _format_manual_payment_details(manual_payment),
-            reply_markup=manual_payment_copy_keyboard(_manual_payment_copy_items(manual_payment)),
+            parse_mode="HTML",
         )
         await callback.answer()
 
